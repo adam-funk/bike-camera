@@ -1,0 +1,9 @@
+{
+  "output_dir": "${HOME}/Videos/bike",
+  "tz": "Europe/London",
+  "sound": false,
+  "mapping": {
+    "model0": "front",
+    "model1": "rear"
+  }
+}
