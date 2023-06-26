@@ -19,23 +19,23 @@ def get_suffix(path):
     return ''
 
 
-def run_command(command, options0):
-    print('>  %s' % ' '.join(command))
+def run_command(command0, options0):
+    print('>  %s' % ' '.join(command0))
     if not options0.dry_run:
-        subprocess.call(command)
+        subprocess.call(command0)
     return
 
 
 def exiftool(filename, options0):
-    command = ['exiftool', '-G', '-j', filename]
-    exif_stdout = subprocess.check_output(command, universal_newlines=True)
+    command1 = ['exiftool', '-G', '-j', filename]
+    exif_stdout = subprocess.check_output(command1, universal_newlines=True)
     exif_data = json.loads(exif_stdout)[0]
     return exif_data
 
 
 def get_exif_date(filename, options0):
-    exifdata = exiftool(input_file, options0)
-    create_date = exifdata['QuickTime:CreateDate']
+    exif_data = exiftool(input_file, options0)
+    create_date = exif_data['QuickTime:CreateDate']
     # "QuickTime:CreateDate": "2016:01:28 16:30:48",
     # works for Garmin VIRB and Cycliq
     start_time = calendar.timegm(time.strptime(create_date, '%Y:%m:%d %H:%M:%S'))
@@ -53,6 +53,10 @@ parser = argparse.ArgumentParser(description="cut & rename bike camera file",
 
 parser.add_argument('input_files', metavar='FILE', nargs='*',
                     help='input files')
+
+parser.add_argument("-c", dest="config_file",
+                    metavar="JSON",
+                    help="JSON config file")
 
 parser.add_argument('-s', dest='start',
                     metavar="MM:SS",
@@ -97,15 +101,16 @@ parser.add_argument('-q', dest='quality',
 
 options = parser.parse_args()
 
+if options.config_file:
+    config = json.load(options.config_file)
+
+
 for input_file in options.input_files:
-    command0 = ['nice', '-10', 'ffmpeg', '-ss', options.start, '-i', input_file,
-                '-loglevel', '24']
-    command1 = ['nice', '-10', 'ffmpeg', '-ss', options.start, '-i', input_file,
-                '-loglevel', '24']
+    command = ['nice', '-10', 'ffmpeg', '-ss', options.start, '-i', input_file,
+               '-loglevel', '24']
 
     if options.length:
-        command0 += ['-t', options.length]
-        command1 += ['-t', options.length]
+        command += ['-t', options.length]
 
     ctime = get_exif_date(input_file, options)
     # ctime = pathlib.Path(input_file).stat().st_ctime
@@ -125,24 +130,17 @@ for input_file in options.input_files:
     filename0 = pathlib.Path(options.output_directory, new_basename + '.mp4')
     filename1 = pathlib.Path(options.output_directory, new_basename + '.wmv')
 
-    command0 += ['-vcodec', 'copy']
-    command1 += ['-q:v', str(options.quality), '-q:a', '4', '-vcodec', 'msmpeg4']
+    command += ['-vcodec', 'copy']
 
     if options.silent:
-        command0 += ['-an']
-        command1 += ['-an']
+        command += ['-an']
     else:
-        command0 += ['-acodec', 'copy']
-        command1 += ['-acodec', 'wmav2']
+        command += ['-acodec', 'copy']
 
-    command0 += [str(filename0)]
-    command1 += [str(filename1)]
+    command += [str(filename0)]
 
     # Experimentally, this seems good & produces files close to the same
     # size.
     # ffmpeg -i INPUT.MP4 -qscale 6 -vcodec msmpeg4 -acodec wmav2  OUTPUT.WMV
 
-    run_command(command0, options)
-
-    if options.wmv:
-        run_command(command1, options)
+    run_command(command, options)
