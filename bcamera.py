@@ -87,7 +87,7 @@ parser.add_argument('-p', dest='plate',
 
 parser.add_argument('-o', dest='output_directory',
                     metavar="DIRECTORY",
-                    default='.', type=str,
+                    default=None, type=str,
                     help='output directory')
 
 parser.add_argument('-n', dest='dry_run',
@@ -116,11 +116,16 @@ with open(options.config_file, 'r') as f:
 config = ChainMap(command_line_args, base_config)
 
 if config.get('verbose'):
+    print()
     print(config)
+    print()
 
 for input_file in config['input_files']:
-    command = ['nice', '-10', 'ffmpeg', '-i', input_file,
-               '-loglevel', '24', '-ss', config['start']]
+    command = ['nice', '-10', 'ffmpeg',
+               '-i', input_file,
+               '-loglevel', '24',
+               '-ss', config['start'],
+               '-vcodec', 'copy']
 
     if config.get('length'):
         command += ['-t', config['length']]
@@ -133,14 +138,12 @@ for input_file in config['input_files']:
     basename_parts = [clip_start.strftime('%Y-%m-%d-%H%M')]
 
     if config.get('plate'):
-        basename_parts.append(config.get['plate'].upper())
+        basename_parts.append(config['plate'].upper())
     basename_parts.append(get_suffix(input_file, config))
     new_basename = '_'.join(basename_parts)
 
     filename0 = pathlib.Path(options.output_directory, new_basename + '.mp4')
     filename1 = pathlib.Path(options.output_directory, new_basename + '.wmv')
-
-    command += ['-vcodec', 'copy']
 
     if config.get('sound'):
         command += ['-acodec', 'copy']

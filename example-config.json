@@ -4,6 +4,6 @@
   "sound": false,
   "mapping": {
     "VIRB": "front",
-    "CYC": "rear"
+    "CYQ": "rear"
   }
 }
