@@ -73,12 +73,12 @@ parser.add_argument('-s', dest='start',
 parser.add_argument('-t', dest='length',
                     metavar="MM:SS",
                     default=None, type=str,
-                    help='stop after this duration (optional)')
+                    help='stop after this duration')
 
 parser.add_argument('-e', dest='end',
                     metavar="MM:SS",
                     default=None, type=str,
-                    help='stop at this time(optional)')
+                    help='stop at this time')
 
 parser.add_argument('-p', dest='plate',
                     metavar="BR549",
@@ -126,7 +126,12 @@ for input_file in config['input_files']:
         command += ['-t', config['length']]
     elif config.get('end'):
         duration = convert(config['end']) - convert(config['start'])
-        command += ['-t', duration]
+        command += ['-t', str(duration)]
+
+    if config.get('sound'):
+        command += ['-acodec', 'copy']
+    else:
+        command += ['-an']
 
     file_start = get_exif_date(input_file, config)
     clip_start = file_start + timedelta(seconds=convert(options.start))
@@ -134,21 +139,11 @@ for input_file in config['input_files']:
 
     if config.get('plate'):
         basename_parts.append(config['plate'].upper())
+
     basename_parts.append(get_suffix(input_file, config))
     new_basename = '_'.join(basename_parts)
 
-    filename0 = pathlib.Path(options.output_directory, new_basename + '.mp4')
-    filename1 = pathlib.Path(options.output_directory, new_basename + '.wmv')
-
-    if config.get('sound'):
-        command += ['-acodec', 'copy']
-    else:
-        command += ['-an']
+    filename0 = os.path.join(config['output_directory'], new_basename + '.mp4')
 
     command += [str(filename0)]
-
-    # Experimentally, this seems good & produces files close to the same
-    # size.
-    # ffmpeg -i INPUT.MP4 -qscale 6 -vcodec msmpeg4 -acodec wmav2  OUTPUT.WMV
-
     run_command(command, config)
