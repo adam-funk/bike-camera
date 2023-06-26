@@ -1,6 +1,5 @@
 {
   "output_directory": "/path/to/Videos/bike",
-  "timezone": "Europe/London",
   "sound": false,
   "mapping": {
     "VIRB": "front",

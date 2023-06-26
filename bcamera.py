@@ -103,11 +103,6 @@ parser.add_argument('-S', dest='sound',
                     action='store_true',
                     help='sound enabled')
 
-parser.add_argument('-z', dest='timezone',
-                    type=str, metavar='Europe/London',
-                    default=None,
-                    help='timezone')
-
 options = parser.parse_args()
 
 command_line_args = {k: v for k, v in vars(options).items() if v is not None}
