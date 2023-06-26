@@ -3,14 +3,13 @@
 import argparse
 import json
 import os
-import pathlib
 import re
 import subprocess
 from collections import ChainMap
 from datetime import datetime, timedelta
 
 PREFIX = re.compile(r'[^-_]{,4}')
-
+DEFAULT_CONFIG = os.path.join(os.environ['HOME'], '.config', 'bike-camera.json')
 
 def get_suffix(path, config0):
     base = os.path.basename(path)
@@ -61,14 +60,14 @@ parser.add_argument('input_files', metavar='FILE', nargs='*',
                     help='input files')
 
 parser.add_argument("-c", dest="config_file",
-                    required=True,
+                    default=DEFAULT_CONFIG,
                     metavar="JSON",
                     help="JSON config file")
 
 parser.add_argument('-s', dest='start',
                     metavar="MM:SS",
                     default='0', type=str,
-                    help='start this far into video')
+                    help='start at this point')
 
 parser.add_argument('-t', dest='length',
                     metavar="MM:SS",
@@ -78,12 +77,17 @@ parser.add_argument('-t', dest='length',
 parser.add_argument('-e', dest='end',
                     metavar="MM:SS",
                     default=None, type=str,
-                    help='stop at this time')
+                    help='stop at this point')
 
 parser.add_argument('-p', dest='plate',
                     metavar="BR549",
                     default=None, type=str,
                     help='plate number for filename')
+
+parser.add_argument('-S', dest='sound',
+                    default=None,
+                    action='store_true',
+                    help='sound enabled')
 
 parser.add_argument('-o', dest='output_directory',
                     metavar="DIRECTORY",
@@ -97,11 +101,6 @@ parser.add_argument('-n', dest='dry_run',
 parser.add_argument('-v', dest='verbose',
                     default=False, action='store_true',
                     help='verbose')
-
-parser.add_argument('-S', dest='sound',
-                    default=None,
-                    action='store_true',
-                    help='sound enabled')
 
 options = parser.parse_args()
 
