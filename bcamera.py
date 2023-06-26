@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 
-import argparse, pathlib, subprocess, time, json, calendar, re, os
-from   sys  import stdout
+import argparse
+import calendar
+import json
+import os
+import pathlib
+import re
+import subprocess
+import time
 
 PREFIX = re.compile(r'[^-_]{,4}')
 
@@ -13,26 +19,25 @@ def get_suffix(path):
     return ''
 
 
-def run_command(command, options):
+def run_command(command, options0):
     print('>  %s' % ' '.join(command))
-    if (not options.dry_run):
+    if not options0.dry_run:
         subprocess.call(command)
     return
 
 
-def exiftool(filename, options):
+def exiftool(filename, options0):
     command = ['exiftool', '-G', '-j', filename]
-    exifstdout = subprocess.check_output(command, universal_newlines=True)
-    exifdata = json.loads(exifstdout)[0]
-    return exifdata
+    exif_stdout = subprocess.check_output(command, universal_newlines=True)
+    exif_data = json.loads(exif_stdout)[0]
+    return exif_data
 
 
-def exifdate(filename, options):
-    exifdata = exiftool(input_file, options)
+def get_exif_date(filename, options0):
+    exifdata = exiftool(input_file, options0)
     create_date = exifdata['QuickTime:CreateDate']
     # "QuickTime:CreateDate": "2016:01:28 16:30:48",
-    # works for Garmin VIRB
-    # should also work for Cycliq
+    # works for Garmin VIRB and Cycliq
     start_time = calendar.timegm(time.strptime(create_date, '%Y:%m:%d %H:%M:%S'))
     print('*  %-15s   %10i   %s' % (create_date, start_time, filename))
     return start_time
@@ -40,14 +45,14 @@ def exifdate(filename, options):
 
 def convert(hms):
     # https://stackoverflow.com/questions/6402812/how-to-convert-an-hmmss-time-string-to-seconds-in-python
-    return sum(int(x) * 60 ** i for i,x in enumerate(reversed(hms.split(":"))))
+    return sum(int(x) * 60 ** i for i, x in enumerate(reversed(hms.split(":"))))
 
 
-parser = argparse.ArgumentParser(description="cut & rename VIRB file",
+parser = argparse.ArgumentParser(description="cut & rename bike camera file",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('input_files', metavar='FILE', nargs='*',
-		    help='input files')
+                    help='input files')
 
 parser.add_argument('-s', dest='start',
                     metavar="MM:SS",
@@ -64,28 +69,28 @@ parser.add_argument('-p', dest='plate',
                     default=None, type=str,
                     help='plate number for filename')
 
-parser.add_argument('-o', dest='output_directory', 
+parser.add_argument('-o', dest='output_directory',
                     metavar="DIRECTORY",
                     default='.', type=str,
                     help='output directory')
 
-parser.add_argument('-n', dest='dry_run', 
+parser.add_argument('-n', dest='dry_run',
                     default=False, action='store_true',
                     help='dry run')
 
-parser.add_argument('-e', dest='summer', 
+parser.add_argument('-e', dest='summer',
                     default=False, action='store_true',
                     help='estival: correct for summer time')
 
-parser.add_argument('-S', dest='silent', 
+parser.add_argument('-S', dest='silent',
                     default=False, action='store_true',
                     help='silent (no audio)')
 
-parser.add_argument('-W', dest='wmv', 
+parser.add_argument('-W', dest='wmv',
                     default=False, action='store_true',
                     help='generate WMV')
 
-parser.add_argument('-q', dest='quality', 
+parser.add_argument('-q', dest='quality',
                     metavar="N",
                     default=4, type=int,
                     help='video quality (lower is better!)')
@@ -102,11 +107,11 @@ for input_file in options.input_files:
         command0 += ['-t', options.length]
         command1 += ['-t', options.length]
 
-    ctime = exifdate(input_file, options)
-    #ctime = pathlib.Path(input_file).stat().st_ctime
-    ntime = ctime + convert(options.start) # epoch time
+    ctime = get_exif_date(input_file, options)
+    # ctime = pathlib.Path(input_file).stat().st_ctime
+    ntime = ctime + convert(options.start)  # epoch time
     if options.summer:
-        ntime = ntime - 3600 # subtract 1h in summer
+        ntime = ntime - 3600  # subtract 1h in summer
     start = time.localtime(ntime)
     # Like gmtime() but converts to local time.
     # TODO -- auto TZ
@@ -132,7 +137,6 @@ for input_file in options.input_files:
 
     command0 += [str(filename0)]
     command1 += [str(filename1)]
-    
 
     # Experimentally, this seems good & produces files close to the same
     # size.
@@ -142,4 +146,3 @@ for input_file in options.input_files:
 
     if options.wmv:
         run_command(command1, options)
-

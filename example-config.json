@@ -1,9 +1,9 @@
 {
-  "output_dir": "${HOME}/Videos/bike",
+  "output_dir": "/path/to/Videos/bike",
   "tz": "Europe/London",
   "sound": false,
   "mapping": {
-    "model0": "front",
-    "model1": "rear"
+    "VIRB": "front",
+    "CYC": "rear"
   }
 }
