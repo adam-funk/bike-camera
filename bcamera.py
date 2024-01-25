@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 
 PREFIX = re.compile(r'[^-_]{,4}')
 DEFAULT_CONFIG = os.path.join(os.environ['HOME'], '.config', 'bike-camera.json')
+TIME_KEY = 'File:FileInodeChangeDate'
+# previously 'QuickTime:CreateDate' but that is the end time for the Cycliq
+
 
 def get_suffix(path, config0):
     base = os.path.basename(path)
@@ -30,16 +33,16 @@ def run_command(command0: list, config0: ChainMap):
     return
 
 
-def exiftool(filename, config0: ChainMap):
+def exiftool(filename):
     command1 = ['exiftool', '-G', '-j', filename]
     exif_stdout = subprocess.check_output(command1, universal_newlines=True)
     exif_data = json.loads(exif_stdout)[0]
     return exif_data
 
 
-def get_exif_date(filename, config0: ChainMap):
-    exif_data = exiftool(input_file, config0)
-    create_date = exif_data['QuickTime:CreateDate']
+def get_exif_date(filename):
+    exif_data = exiftool(input_file)
+    create_date = exif_data[TIME_KEY]
     # "QuickTime:CreateDate": "2016:01:28 16:30:48",
     # works for Garmin VIRB and Cycliq
     start_time = datetime.strptime(create_date, '%Y:%m:%d %H:%M:%S')
@@ -132,7 +135,7 @@ for input_file in config['input_files']:
     else:
         command += ['-an']
 
-    file_start = get_exif_date(input_file, config)
+    file_start = get_exif_date(input_file)
     clip_start = file_start + timedelta(seconds=convert(options.start))
     basename_parts = [clip_start.strftime('%Y-%m-%d-%H%M')]
 
