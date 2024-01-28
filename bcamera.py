@@ -45,7 +45,8 @@ def get_exif_date(filename):
     create_date = exif_data[TIME_KEY]
     # "QuickTime:CreateDate": "2016:01:28 16:30:48",
     # works for Garmin VIRB and Cycliq
-    start_time = datetime.strptime(create_date, '%Y:%m:%d %H:%M:%S')
+    # "File:FileInodeChangeDate": "2024:01:28 11:53:02+00:00",
+    start_time = datetime.strptime(create_date, '%Y:%m:%d %H:%M:%S%z')
     print(f'* {create_date}  {start_time.isoformat()}  {filename}')
     return start_time
 
