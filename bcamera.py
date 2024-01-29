@@ -10,20 +10,23 @@ from datetime import datetime, timedelta
 
 PREFIX = re.compile(r'[^-_]{,4}')
 DEFAULT_CONFIG = os.path.join(os.environ['HOME'], '.config', 'bike-camera.json')
-TIME_KEY = 'File:FileInodeChangeDate'
-# previously 'QuickTime:CreateDate' but that is the end time for the Cycliq
+TIME_KEY = 'QuickTime:CreateDate'
+DURATION_KEY = 'QuickTime:Duration'
+# 'File:FileInodeChangeDate' changes when the file is copied
 
 
-def get_suffix(path, config0):
+def get_mapping(path, config0):
     base = os.path.basename(path)
     for k, v in config0['mapping'].items():
         if base.startswith(k):
             return v
-    # fall back to prefix
     m = PREFIX.match(os.path.basename(path))
     if m:
-        return '-' + m.group(0)
-    return ''
+        fallback_name = m.group(0)
+    else:
+        fallback_name = ''
+    return {'rename': fallback_name,
+            'time_end': False}
 
 
 def run_command(command0: list, config0: ChainMap):
@@ -40,21 +43,21 @@ def exiftool(filename):
     return exif_data
 
 
-def get_exif_date(filename):
+def get_exif_date(filename, from_end):
     exif_data = exiftool(input_file)
     create_date = exif_data[TIME_KEY]
-    # "QuickTime:CreateDate": "2016:01:28 16:30:48",
-    # works for Garmin VIRB and Cycliq
-    # "File:FileInodeChangeDate": "2024:01:28 11:53:02+00:00",
-    start_time = datetime.strptime(create_date, '%Y:%m:%d %H:%M:%S%z')
-    print(f'* {create_date}  {start_time.isoformat()}  {filename}')
-    return start_time
+    timestamp = datetime.strptime(create_date, '%Y:%m:%d %H:%M:%S')
+    if from_end:
+        duration0 = exif_data[DURATION_KEY]
+        timestamp -= timedelta(seconds=convert(duration0))
+    print(f'* {create_date}  {filename}')
+    print(f'* {timestamp.isoformat()}')
+    return timestamp
 
 
 def convert(hms):
     # https://stackoverflow.com/questions/6402812/how-to-convert-an-hmmss-time-string-to-seconds-in-python
-    # TODO would float(x) break ffmpeg options?
-    return sum(int(x) * 60 ** i for i, x in enumerate(reversed(hms.split(":"))))
+    return sum(float(x) * 60 ** i for i, x in enumerate(reversed(hms.split(":"))))
 
 
 parser = argparse.ArgumentParser(description="cut & rename bike camera file",
@@ -136,14 +139,16 @@ for input_file in config['input_files']:
     else:
         command += ['-an']
 
-    file_start = get_exif_date(input_file)
+    camera_info = get_mapping(input_file, config)
+    file_start = get_exif_date(input_file, camera_info['time_end'])
     clip_start = file_start + timedelta(seconds=convert(options.start))
+    print(f'* {clip_start.isoformat()}')
     basename_parts = [clip_start.strftime('%Y-%m-%d-%H%M')]
 
     if config.get('plate'):
         basename_parts.append(config['plate'].upper())
 
-    basename_parts.append(get_suffix(input_file, config))
+    basename_parts.append(camera_info['rename'])
     new_basename = '_'.join(basename_parts)
 
     filename0 = os.path.join(config['output_directory'], new_basename + '.mp4')

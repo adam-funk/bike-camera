@@ -2,7 +2,13 @@
   "output_directory": "/path/to/Videos/bike",
   "sound": false,
   "mapping": {
-    "VIRB": "front",
-    "CYQ": "rear"
+    "VIRB": {
+      "rename": "front",
+      "time_end": false
+    },
+    "CYQ": {
+      "rename": "rear",
+      "time_end": true
+    }
   }
 }
