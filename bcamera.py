@@ -9,7 +9,7 @@ from collections import ChainMap
 from datetime import datetime, timedelta
 
 PREFIX = re.compile(r'[^-_]{,4}')
-DEFAULT_CONFIG = os.path.join(os.environ['HOME'], '.config', 'bike-camera.json')
+DEFAULT_CONFIG = os.path.join(os.environ['HOME'], '.local', 'bike-camera.json')
 TIME_KEY = 'QuickTime:CreateDate'
 DURATION_KEY = 'QuickTime:Duration'
 # 'File:FileInodeChangeDate' changes when the file is copied
@@ -68,7 +68,7 @@ parser.add_argument('input_files', metavar='FILE', nargs='*',
 
 parser.add_argument("-c", dest="config_file",
                     default=DEFAULT_CONFIG,
-                    metavar="JSON",
+                    metavar="FILE.json",
                     help="JSON config file")
 
 parser.add_argument('-s', dest='start',
@@ -109,6 +109,13 @@ parser.add_argument('-v', dest='verbose',
                     default=False, action='store_true',
                     help='verbose')
 
+parser.add_argument('-f', dest='camera',
+                    action='store_const',
+                    default='rear',
+                    const='front',
+                    help='front camera'
+                    )
+
 options = parser.parse_args()
 
 command_line_args = {k: v for k, v in vars(options).items() if v is not None}
@@ -148,7 +155,7 @@ for input_file in config['input_files']:
     if config.get('plate'):
         basename_parts.append(config['plate'].upper())
 
-    basename_parts.append(camera_info['rename'])
+    basename_parts.append(config['camera'])
     new_basename = '_'.join(basename_parts)
 
     filename0 = os.path.join(config['output_directory'], new_basename + '.mp4')

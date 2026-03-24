@@ -3,11 +3,12 @@
   "sound": false,
   "mapping": {
     "VIRB": {
-      "rename": "front",
+      "time_end": false
+    },
+    "20": {
       "time_end": false
     },
     "CYQ": {
-      "rename": "rear",
       "time_end": true
     }
   }
